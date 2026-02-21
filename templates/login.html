@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card" style="max-width: 400px; margin: 50px auto; padding: 30px;">
+    <h2 style="text-align: center; margin-bottom: 20px;">Login</h2>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div style="background-color: #fee2e2; color: #ef4444; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
+        {{ messages[0] }}
+    </div>
+    {% endif %}
+    {% endwith %}
+    <form action="{{ url_for('login') }}" method="POST">
+        <div style="margin-bottom: 15px;">
+            <label for="username" style="display: block; margin-bottom: 5px;">Username</label>
+            <input type="text" id="username" name="username" required
+                style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; background-color: #1e293b; color: #e2e8f0;">
+        </div>
+        <div style="margin-bottom: 25px;">
+            <label for="password" style="display: block; margin-bottom: 5px;">Password</label>
+            <input type="password" id="password" name="password" required
+                style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; background-color: #1e293b; color: #e2e8f0;">
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%;">Login</button>
+    </form>
+</div>
+{% endblock %}

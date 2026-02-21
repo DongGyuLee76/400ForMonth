@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Management Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                Asset Planner
+            </div>
+            <nav>
+                <ul>
+                    {% if session.get('user_id') %}
+                    <li><a href="{{ url_for('index') }}"
+                            class="{% if request.endpoint == 'index' %}active{% endif %}">Dashboard</a></li>
+                    <li><a href="{{ url_for('input_data') }}"
+                            class="{% if request.endpoint == 'input_data' %}active{% endif %}">Input Data</a></li>
+                    <li><a href="{{ url_for('manage_data') }}"
+                            class="{% if request.endpoint == 'manage_data' %}active{% endif %}">Manage DB</a></li>
+                    <li><a href="{{ url_for('admin_users') }}"
+                            class="{% if request.endpoint == 'admin_users' %}active{% endif %}">Users</a></li>
+                    <li><a href="{{ url_for('logout') }}" style="color: #ef4444;">Logout ({{ session.get('username')
+                            }})</a></li>
+                    {% else %}
+                    <li><a href="{{ url_for('login') }}"
+                            class="{% if request.endpoint == 'login' %}active{% endif %}">Login</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

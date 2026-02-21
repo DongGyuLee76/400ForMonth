@@ -1,0 +1,398 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Manage Financial Database</h2>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="openTab(event, 'tab-goal')">Goal (Plan)</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-actual')">Actual (Current)</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-achievement')">Achievement Rate</button>
+    </div>
+
+    <!-- Tab 1: Goal (Original Plan) -->
+    <div id="tab-goal" class="tab-content active">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Year (Age)</th>
+                        <th>Pension</th>
+                        <th>ISA</th>
+                        <th>General</th>
+                        <th>Total</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plan in plans %}
+                    <tr>
+                        <td>{{ plan['year'] }} ({{ plan['age'] }})</td>
+                        <td>{{ "{:,.0f}".format(plan['pension_savings']) }}</td>
+                        <td>{{ "{:,.0f}".format(plan['isa_account']) }}</td>
+                        <td>{{ "{:,.0f}".format(plan['general_account']) }}</td>
+                        <td>{{ "{:,.0f}".format(plan['total']) }}</td>
+                        <td>
+                            <button class="btn-small btn-edit" data-id="{{ plan['id'] }}" data-year="{{ plan['year'] }}"
+                                data-age="{{ plan['age'] }}" data-pension="{{ plan['pension_savings'] }}"
+                                data-isa="{{ plan['isa_account'] }}" data-general="{{ plan['general_account'] }}"
+                                data-health="{{ plan['health_insurance'] }}" data-tax="{{ plan['tax'] }}"
+                                data-strategy="{{ plan['withdrawal_strategy'] }}" onclick="openEditModal(this)">
+                                Edit
+                            </button>
+                            <form action="{{ url_for('delete_data', id=plan['id']) }}" method="POST"
+                                style="display:inline;">
+                                <button type="submit" class="btn-small btn-delete"
+                                    onclick="return confirm('Delete?')">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Tab 2: Actual (Cumulative) -->
+    <div id="tab-actual" class="tab-content">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Pension (Actual)</th>
+                        <th>ISA (Actual)</th>
+                        <th>General (Actual)</th>
+                        <th>Total (Actual)</th>
+                        <th>Actions (Plan)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in actuals %}
+                    <tr>
+                        <td>{{ row['year'] }}</td>
+                        <td>{{ "{:,.0f}".format(row['pension']) }}</td>
+                        <td>{{ "{:,.0f}".format(row['isa']) }}</td>
+                        <td>{{ "{:,.0f}".format(row['general']) }}</td>
+                        <td style="font-weight:bold; color:var(--accent-color);">{{ "{:,.0f}".format(row['total']) }}
+                        </td>
+                        <td>
+                            {% if row['plan'] %}
+                            <button class="btn-small btn-edit" data-id="{{ row['plan']['id'] }}"
+                                data-year="{{ row['plan']['year'] }}" data-age="{{ row['plan']['age'] }}"
+                                data-pension="{{ row['plan']['pension_savings'] }}"
+                                data-isa="{{ row['plan']['isa_account'] }}"
+                                data-general="{{ row['plan']['general_account'] }}"
+                                data-health="{{ row['plan']['health_insurance'] }}" data-tax="{{ row['plan']['tax'] }}"
+                                data-strategy="{{ row['plan']['withdrawal_strategy'] }}" onclick="openEditModal(this)">
+                                Edit
+                            </button>
+                            <form action="{{ url_for('delete_data', id=row['plan']['id']) }}" method="POST"
+                                style="display:inline;">
+                                <button type="submit" class="btn-small btn-delete"
+                                    onclick="return confirm('Delete Plan?')">Delete</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Tab 3: Achievement -->
+    <div id="tab-achievement" class="tab-content">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Goal Total</th>
+                        <th>Actual Total</th>
+                        <th>Achievement % (Actual/Goal)</th>
+                        <th>Actions (Plan)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in achievements %}
+                    <tr>
+                        <td>{{ row['year'] }}</td>
+                        <td>{{ "{:,.0f}".format(row['goal']) }}</td>
+                        <td>{{ "{:,.0f}".format(row['actual']) }}</td>
+                        <td>
+                            {% if row['goal'] > 0 %}
+                            <span
+                                style="font-weight:bold; color: {{ '#16a34a' if row['gap_pct'] >= 100 else '#ef4444' }};">
+                                {{ "{:.1f}".format(row['gap_pct']) }}%
+                            </span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row['plan'] %}
+                            <button class="btn-small btn-edit" data-id="{{ row['plan']['id'] }}"
+                                data-year="{{ row['plan']['year'] }}" data-age="{{ row['plan']['age'] }}"
+                                data-pension="{{ row['plan']['pension_savings'] }}"
+                                data-isa="{{ row['plan']['isa_account'] }}"
+                                data-general="{{ row['plan']['general_account'] }}"
+                                data-health="{{ row['plan']['health_insurance'] }}" data-tax="{{ row['plan']['tax'] }}"
+                                data-strategy="{{ row['plan']['withdrawal_strategy'] }}" onclick="openEditModal(this)">
+                                Edit
+                            </button>
+                            <form action="{{ url_for('delete_data', id=row['plan']['id']) }}" method="POST"
+                                style="display:inline;">
+                                <button type="submit" class="btn-small btn-delete"
+                                    onclick="return confirm('Delete Plan?')">Delete</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal (Existing logic preserved/updated) -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditModal()">&times;</span>
+        <h2>Edit Financial Plan</h2>
+        <form id="editForm" method="POST">
+            <!-- Hidden Fields for routing/ID are handled by form action update in JS -->
+            <div class="form-group row">
+                <div class="col-md-6">
+                    <label>Year</label>
+                    <input type="number" id="edit_year" name="year" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label>Age</label>
+                    <input type="number" id="edit_age" name="age">
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-4">
+                    <label>Pension</label>
+                    <input type="text" id="edit_pension" name="pension_savings">
+                </div>
+                <div class="col-md-4">
+                    <label>ISA</label>
+                    <input type="text" id="edit_isa" name="isa_account">
+                </div>
+                <div class="col-md-4">
+                    <label>General</label>
+                    <input type="text" id="edit_general" name="general_account">
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-4">
+                    <label>Health Ins.</label>
+                    <input type="text" id="edit_health" name="health_insurance">
+                </div>
+                <div class="col-md-4">
+                    <label>Tax</label>
+                    <input type="text" id="edit_tax" name="tax">
+                </div>
+                <div class="col-md-4">
+                    <label>Strategy</label>
+                    <input type="text" id="edit_strategy" name="withdrawal_strategy">
+                </div>
+            </div>
+            <button type="submit" class="btn-primary">Update Plan</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        // Hide all tab content
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+        }
+        // Remove active class from all buttons
+        tablinks = document.getElementsByClassName("tab-btn");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        // Show current tab and add active to button
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+    }
+
+    // Modal Logic
+    var modal = document.getElementById("editModal");
+    function openEditModal(button) {
+        var id = button.getAttribute('data-id');
+        document.getElementById('edit_year').value = button.getAttribute('data-year');
+        document.getElementById('edit_age').value = button.getAttribute('data-age');
+        document.getElementById('edit_pension').value = button.getAttribute('data-pension');
+        document.getElementById('edit_isa').value = button.getAttribute('data-isa');
+        document.getElementById('edit_general').value = button.getAttribute('data-general');
+        document.getElementById('edit_health').value = button.getAttribute('data-health');
+        document.getElementById('edit_tax').value = button.getAttribute('data-tax');
+        document.getElementById('edit_strategy').value = button.getAttribute('data-strategy');
+
+        // Ensure form action is set
+        var form = document.getElementById('editForm');
+        form.action = "/edit/" + id;
+
+        modal.style.display = "block";
+    }
+    function closeEditModal() {
+        modal.style.display = "none";
+    }
+    window.onclick = function (event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+</script>
+
+<style>
+    /* Tabs Styling */
+    .tabs {
+        overflow: hidden;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 20px;
+    }
+
+    .tab-btn {
+        background-color: transparent;
+        float: left;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 14px 20px;
+        transition: 0.3s;
+        color: #94a3b8;
+        font-weight: bold;
+        font-size: 1rem;
+    }
+
+    .tab-btn:hover {
+        color: #e2e8f0;
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn.active {
+        color: var(--accent-color);
+        border-bottom: 2px solid var(--accent-color);
+    }
+
+    .tab-content {
+        display: none;
+        animation: fadeEffect 0.5s;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    @keyframes fadeEffect {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    /* Modal Styling */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+        background-color: rgba(30, 41, 59, 1);
+        margin: 5% auto;
+        padding: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        width: 70%;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        color: #e2e8f0;
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: #fff;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .row {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 15px;
+    }
+
+    .col-md-6 {
+        flex: 1;
+    }
+
+    .col-md-4 {
+        flex: 1;
+    }
+
+    .btn-small {
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: none;
+        color: white;
+        cursor: pointer;
+    }
+
+    .btn-edit {
+        background-color: #f59e0b;
+        margin-right: 5px;
+    }
+
+    .btn-delete {
+        background-color: #ef4444;
+    }
+
+    .table-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th,
+    td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    th {
+        background-color: rgba(255, 255, 255, 0.05);
+        color: #94a3b8;
+    }
+</style>
+{% endblock %}

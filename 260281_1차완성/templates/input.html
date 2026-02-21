@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Record New Deposit / Transaction</h2>
+    <form action="{{ url_for('input_data') }}" method="POST">
+        <div class="form-group row">
+            <div class="col-md-6">
+                <label for="date">Date</label>
+                <input type="date" id="date" name="date" required>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <div class="col-md-4">
+                <label for="pension">Pension Savings</label>
+                <input type="text" id="pension" name="pension" placeholder="Amount">
+            </div>
+            <div class="col-md-4">
+                <label for="isa">ISA Account</label>
+                <input type="text" id="isa" name="isa" placeholder="Amount">
+            </div>
+            <div class="col-md-4">
+                <label for="general">General Account</label>
+                <input type="text" id="general" name="general" placeholder="Amount">
+            </div>
+        </div>
+
+        <button type="submit" class="btn-primary">Add Record</button>
+    </form>
+</div>
+
+<!-- Yearly Summary -->
+<div class="card" style="margin-top: 20px;">
+    <h3>Yearly Summary (Targets)</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Year</th>
+                    <th>Pension</th>
+                    <th>ISA</th>
+                    <th>General</th>
+                    <th>Total Assets</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in summary %}
+                <tr>
+                    <td>{{ row['year'] }}</td>
+                    <td>
+                        {{ "{:,.0f}".format(row['pension']) }}
+                        {% if row['input_p'] > 0 %}
+                        <span style="font-size:0.8em; color:#94a3b8; display:block;">(+{{
+                            "{:,.0f}".format(row['input_p']) }})</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ "{:,.0f}".format(row['isa']) }}
+                        {% if row['input_i'] > 0 %}
+                        <span style="font-size:0.8em; color:#94a3b8; display:block;">(+{{
+                            "{:,.0f}".format(row['input_i']) }})</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ "{:,.0f}".format(row['general']) }}
+                        {% if row['input_g'] > 0 %}
+                        <span style="font-size:0.8em; color:#94a3b8; display:block;">(+{{
+                            "{:,.0f}".format(row['input_g']) }})</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-weight: bold; color: var(--accent-color);">
+                        {{ "{:,.0f}".format(row['total']) }}
+                        {% if row['goal_total'] > 0 %}
+                        <div style="font-size:0.8em; margin-top:4px;">
+                            <span style="color:#94a3b8;">Goal: {{ "{:,.0f}".format(row['goal_total']) }}</span><br>
+                            <span style="display:inline-block; padding:2px 6px; border-radius:4px; font-weight:bold; 
+                                      background-color: {{ '#dcfce7' if row['gap_pct'] >= 100 else '#fee2e2' }};
+                                      color: {{ '#16a34a' if row['gap_pct'] >= 100 else '#ef4444' }};">
+                                Achv: {{ row['gap_pct'] }}%
+                            </span>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Transaction History -->
+<div class="card" style="margin-top: 20px;">
+    <h3>Transaction History</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Pension</th>
+                    <th>ISA</th>
+                    <th>General</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transactions %}
+                <tr>
+                    <td>{{ t['date'] }}</td>
+                    <td>{{ "{:,.0f}".format(t['pension']) }}</td>
+                    <td>{{ "{:,.0f}".format(t['isa']) }}</td>
+                    <td>{{ "{:,.0f}".format(t['general']) }}</td>
+                    <td>
+                        <button class="btn-small btn-edit"
+                            onclick="editTransaction({{ t['id'] }}, '{{ t['date'] }}', {{ t['pension'] }}, {{ t['isa'] }}, {{ t['general'] }})">Edit</button>
+                        <form action="{{ url_for('delete_transaction', id=t['id']) }}" method="POST"
+                            style="display:inline;">
+                            <button type="submit" class="btn-small btn-delete"
+                                onclick="return confirm('Delete this record?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div style="margin-top: 30px; text-align: center;">
+    <a href="{{ url_for('manage_data') }}" class="btn-primary" style="background-color: #64748b;">Manage Financial
+        Database</a>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Set default date to today if empty
+        const dateInput = document.getElementById('date');
+        if (!dateInput.value) {
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.value = today;
+        }
+    });
+
+    function editTransaction(id, date, pension, isa, general) {
+        // Populate form
+        document.getElementById('date').value = date;
+        document.getElementById('pension').value = pension;
+        document.getElementById('isa').value = isa;
+        document.getElementById('general').value = general;
+
+        // Change form action to update
+        const form = document.querySelector('form[action="{{ url_for('input_data') }}"]');
+        if (form) {
+            form.action = "/update_transaction/" + id;
+
+            // Change button text
+            const btn = form.querySelector('button[type="submit"]');
+            btn.textContent = "Update Record";
+            btn.classList.add('btn-warning');
+
+            // Add cancel button if not exists
+            if (!document.getElementById('btn-cancel')) {
+                const cancelBtn = document.createElement('button');
+                cancelBtn.type = 'button';
+                cancelBtn.id = 'btn-cancel';
+                cancelBtn.textContent = 'Cancel';
+                cancelBtn.className = 'btn-secondary';
+                cancelBtn.style.marginLeft = '10px';
+                cancelBtn.onclick = function () {
+                    resetForm(form, btn, cancelBtn);
+                };
+                btn.parentNode.appendChild(cancelBtn);
+            }
+        }
+
+        // Scroll to form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function resetForm(form, submitBtn, cancelBtn) {
+        form.reset();
+        form.action = "{{ url_for('input_data') }}";
+        submitBtn.textContent = "Add Record";
+        submitBtn.classList.remove('btn-warning');
+
+        // Reset date
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date').value = today;
+
+        if (cancelBtn) {
+            cancelBtn.remove();
+        }
+    }
+</script>
+
+<style>
+    .row {
+        display: flex;
+        gap: 20px;
+    }
+
+    .col-md-6 {
+        flex: 1;
+    }
+
+    .col-md-4 {
+        flex: 1;
+    }
+
+    .btn-small {
+        padding: 4px 8px;
+        font-size: 0.8rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        color: white;
+    }
+
+    .btn-edit {
+        background-color: #f59e0b;
+    }
+
+    .btn-delete {
+        background-color: #ef4444;
+    }
+
+    .btn-warning {
+        background-color: #f59e0b;
+    }
+
+    .btn-secondary {
+        background-color: #64748b;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
